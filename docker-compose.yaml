@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  firewall-updater:
+    build: .
+    container_name: firewall-updater
+    network_mode: host
+    restart: always
+    environment:
+      - API_KEY=${API_KEY}
+    command: ["./firewall-updater", "-apikey", "${API_KEY}"]
