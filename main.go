@@ -16,8 +16,14 @@ type FirewallRequest struct {
 	Address string `json:"address"`
 }
 
+var (
+	apiURLs = []string{
+		"https://chuanxiang-backend.int.devcloudhub.org/api/public/firewall",
+		"https://chuanxiang-backend.prod.devcloudhub.org/api/public/firewall",
+	}
+)
+
 const (
-	apiURL      = "https://chuanxiang-backend.int.devcloudhub.org/api/public/firewall"
 	ipFetchURL  = "https://ifconfig.me/ip"
 	requestFreq = 5 * time.Minute // Adjust as needed
 )
@@ -37,14 +43,14 @@ func getPublicIP() (string, error) {
 	return string(body), nil
 }
 
-func postFirewallRule(ip string, apiKey string) error {
+func postFirewallRule(url string, ip string, apiKey string) error {
 	data := FirewallRequest{Type: "Allow", Address: ip}
 	jsonData, err := json.Marshal(data)
 	if err != nil {
 		return err
 	}
 
-	req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return err
 	}
@@ -84,10 +90,15 @@ func main() {
 			fmt.Println("Error fetching IP:", err)
 		} else {
 			fmt.Println("Public IP:", ip)
-			err = postFirewallRule(ip, *apiKey)
-			if err != nil {
-				fmt.Println("Error posting firewall rule:", err)
+			for _, url := range apiURLs {
+				err = postFirewallRule(url, ip, *apiKey)
+				if err != nil {
+					errMessage := fmt.Sprintf("Error posting firewall rule to %s: %v", url, err)
+					fmt.Println(errMessage)
+				}
+
 			}
+
 		}
 		time.Sleep(requestFreq)
 	}
